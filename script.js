@@ -28,15 +28,10 @@ function displayGames(games) {
         gameListHtml += `
             <div class="col-md-4">
                 <div class="card mb-3">
-                    <img src="${game.thumbnail}" class="card-img-top" alt="${game.title}">
+                    <img src="${game.thumbnail}" class="card-img-top w-100" alt="${game.title}">
                     <div class="card-body">
                         <h5 class="card-title">${game.title}</h5>
-                        <p class="card-text" style="
-                            display: -webkit-box;
-                            -webkit-line-clamp: 2;
-                            -webkit-box-orient: vertical;
-                            overflow: hidden;
-                        ">
+                        <p class="card-text" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                             ${game.short_description}
                         </p>
                         <button class="btn btn-primary" onclick="fetchGameDetails(${game.id})" data-toggle="modal" data-target="#gameModal">View Details</button>
@@ -61,7 +56,7 @@ function fetchGameDetails(gameId) {
             let gameDetailsHtml = `
                 <div class="row">
                     <div class="col-md-4">
-                        <img src="${game.thumbnail}" class="img-fluid mb-3" alt="${game.title}">
+                        <img src="${game.thumbnail}" class="img-fluid w-100 mb-3" alt="${game.title}">
                         <a href="${game.game_url}" target="_blank" class="btn btn-success btn-block">Play Now</a>
                     </div>
                     <div class="col-md-8">
@@ -101,21 +96,36 @@ function fetchGameDetails(gameId) {
     });
 }
 
-
-// Search games
-function searchGames() {
+// Search dan filter 
+function searchDanFilterGame() {
     let query = $("#input-search").val().toLowerCase();
-    let filteredGames = allGames.filter(game => game.title.toLowerCase().includes(query));
-    displayGames(filteredGames);
+    let selectedGenre = $("#genre-filter").val();
+
+    let filteredGames = allGames.filter(game => 
+        game.title.toLowerCase().includes(query) && 
+        (selectedGenre === "" || game.genre === selectedGenre)
+    );
+
+    if (filteredGames.length === 0) {
+        $("#game-list").html(`
+            <div class="col-12 text-center">
+                <h3 class="text-muted mt-5">Sorry, Game not available</h3>
+            </div>
+        `);
+    } else {
+        displayGames(filteredGames);
+    }
 }
 
-$("#button-search").click(searchGames);
 
+// Event listeners
+$("#button-search").click(searchDanFilterGame);
 $("#input-search").on("keypress", function (event) {
     if (event.keyCode === 13) {
-        searchGames(); 
+        searchDanFilterGame();
     }
 });
+$("#genre-filter").change(searchDanFilterGame);
 
-
+// Load games
 $(document).ready(fetchGames);
