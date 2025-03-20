@@ -34,7 +34,7 @@ function displayGames(games) {
                         <p class="card-text" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                             ${game.short_description}
                         </p>
-                        <button class="btn btn-primary" onclick="fetchGameDetails(${game.id})" data-toggle="modal" data-target="#gameModal">View Details</button>
+                        <button class="btn btn-dark" onclick="fetchGameDetails(${game.id})" data-toggle="modal" data-target="#gameModal">View Details</button>
                     </div>
                 </div>
             </div>
