@@ -1,131 +1,93 @@
-const API_HOST = "free-to-play-games-database.p.rapidapi.com";
-const API_KEY = "63cfcd3668msh8999dab45fbfaf8p1941efjsn92b4b1bf298d"; 
-let allGames = [];
+const NEWS_API_KEY = "f3685549a70c41a493b3cd0ecda9e4db";
+let allArticles = [];
 
-// Fetch game list
-function fetchGames() {
+// Fetch news articles
+function fetchNews(query = "apple") {
     $.ajax({
-        url: "https://free-to-play-games-database.p.rapidapi.com/api/games",
+        url: `https://newsapi.org/v2/everything?q=${query}&apiKey=${NEWS_API_KEY}`,
         method: "GET",
-        headers: {
-            "x-rapidapi-host": API_HOST,
-            "x-rapidapi-key": API_KEY
-        },
-        success: function (games) {
-            allGames = games; 
-            displayGames(games);
+        success: function (response) {
+            if (response.status === "ok") {
+                allArticles = response.articles;
+                displayNews(allArticles);
+                populateSourceFilter(allArticles);
+            }
         },
         error: function (err) {
-            console.error("Error fetching games:", err);
+            console.error("Error fetching news:", err);
         }
     });
 }
 
-// Display game list
-function displayGames(games) {
-    let gameListHtml = "";
-    games.forEach(game => {
-        gameListHtml += `
+// Display news
+function displayNews(articles) {
+    let newsHtml = "";
+    articles.forEach((article, index) => {
+        newsHtml += `
             <div class="col-md-4">
                 <div class="card mb-3">
-                    <img src="${game.thumbnail}" class="card-img-top w-100" alt="${game.title}">
+                    <img src="${article.urlToImage || 'https://via.placeholder.com/300x200?text=No+Image'}" class="card-img-top" alt="${article.title}">
                     <div class="card-body">
-                        <h5 class="card-title">${game.title}</h5>
-                        <p class="card-text" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                            ${game.short_description}
-                        </p>
-                        <button class="btn btn-dark" onclick="fetchGameDetails(${game.id})" data-toggle="modal" data-target="#gameModal">View Details</button>
+                        <h5 class="card-title">${article.title}</h5>
+                        <p class="card-text">${article.description || "No description available."}</p>
+                        <button class="btn btn-primary" onclick="showDetails(${index})" data-toggle="modal" data-target="#newsModal">Read More</button>
                     </div>
                 </div>
             </div>
         `;
     });
-    $("#game-list").html(gameListHtml);
+
+    $("#news-list").html(newsHtml);
 }
 
-// Fetch game details
-function fetchGameDetails(gameId) {
-    $.ajax({
-        url: `https://free-to-play-games-database.p.rapidapi.com/api/game?id=${gameId}`,
-        method: "GET",
-        headers: {
-            "x-rapidapi-host": API_HOST,
-            "x-rapidapi-key": API_KEY
-        },
-        success: function (game) {
-            let gameDetailsHtml = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <img src="${game.thumbnail}" class="img-fluid w-100 mb-3" alt="${game.title}">
-                        <a href="${game.game_url}" target="_blank" class="btn btn-success btn-block">Play Now</a>
-                    </div>
-                    <div class="col-md-8">
-                        <h3>${game.title} <small class="badge badge-success">${game.status}</small></h3>
-                        <p><strong>Genre:</strong> ${game.genre}</p>
-                        <p><strong>Platform:</strong> ${game.platform}</p>
-                        <p><strong>Publisher:</strong> ${game.publisher}</p>
-                        <p><strong>Developer:</strong> ${game.developer}</p>
-                        <p><strong>Release Date:</strong> ${game.release_date}</p>
-                        <p><strong>Description:</strong> ${game.description}</p>
-                    </div>
-                </div>
-
-                <h5 class="mt-4">Minimum System Requirements</h5>
-                <ul>
-                    <li><strong>OS:</strong> ${game.minimum_system_requirements?.os || "N/A"}</li>
-                    <li><strong>Processor:</strong> ${game.minimum_system_requirements?.processor || "N/A"}</li>
-                    <li><strong>Memory:</strong> ${game.minimum_system_requirements?.memory || "N/A"}</li>
-                    <li><strong>Graphics:</strong> ${game.minimum_system_requirements?.graphics || "N/A"}</li>
-                    <li><strong>Storage:</strong> ${game.minimum_system_requirements?.storage || "N/A"}</li>
-                </ul>
-
-                <h5 class="mt-4">Screenshots</h5>
-                <div class="row">
-                    ${game.screenshots?.map(screenshot => `
-                        <div class="col-md-4">
-                            <img src="${screenshot.image}" class="img-fluid mb-2" alt="Screenshot">
-                        </div>
-                    `).join("") || "<p>No screenshots available.</p>"}
-                </div>
-            `;
-            $("#game-details").html(gameDetailsHtml);
-        },
-        error: function (err) {
-            console.error("Error fetching game details:", err);
-        }
+// Populate source filter dropdown
+function populateSourceFilter(articles) {
+    let sources = [...new Set(articles.map(article => article.source.name))];
+    let sourceOptions = `<option value="">All Sources</option>`;
+    sources.forEach(source => {
+        sourceOptions += `<option value="${source}">${source}</option>`;
     });
+    $("#source-filter").html(sourceOptions);
 }
 
-// Search dan filter 
-function searchDanFilterGame() {
-    let query = $("#input-search").val().toLowerCase();
-    let selectedGenre = $("#genre-filter").val();
+// Show full article detail
+function showDetails(index) {
+    let article = allArticles[index];
+    let detailsHtml = `
+        <h3>${article.title}</h3>
+        <p><strong>Source:</strong> ${article.source.name}</p>
+        <p><strong>Published At:</strong> ${new Date(article.publishedAt).toLocaleString()}</p>
+        <p><strong>Author:</strong> ${article.author || "Unknown"}</p>
+        <img src="${article.urlToImage || 'https://via.placeholder.com/300x200?text=No+Image'}" class="img-fluid my-3" />
+        <p>${article.content || "No content available."}</p>
+        <a href="${article.url}" target="_blank" class="btn btn-success">Read Full Article</a>
+    `;
+    $("#news-details").html(detailsHtml);
+}
 
-    let filteredGames = allGames.filter(game => 
-        game.title.toLowerCase().includes(query) && 
-        (selectedGenre === "" || game.genre === selectedGenre)
-    );
+// Filter by keyword and source
+function searchAndFilterNews() {
+    let keyword = $("#input-search").val().toLowerCase();
+    let selectedSource = $("#source-filter").val();
 
-    if (filteredGames.length === 0) {
-        $("#game-list").html(`
-            <div class="col-12 text-center">
-                <h3 class="text-muted mt-5">Sorry, Game not available</h3>
-            </div>
-        `);
+    let filtered = allArticles.filter(article => {
+        let matchKeyword = article.title.toLowerCase().includes(keyword) || article.description?.toLowerCase().includes(keyword);
+        let matchSource = selectedSource === "" || article.source.name === selectedSource;
+        return matchKeyword && matchSource;
+    });
+
+    if (filtered.length === 0) {
+        $("#news-list").html(`<div class="col-12 text-center"><h3 class="text-muted">No articles found</h3></div>`);
     } else {
-        displayGames(filteredGames);
+        displayNews(filtered);
     }
 }
 
-
-// Event listeners
-$("#button-search").click(searchDanFilterGame);
-$("#input-search").on("keypress", function (event) {
-    if (event.keyCode === 13) {
-        searchDanFilterGame();
-    }
+// Events
+$("#button-search").click(searchAndFilterNews);
+$("#input-search").on("keypress", function (e) {
+    if (e.keyCode === 13) searchAndFilterNews();
 });
-$("#genre-filter").change(searchDanFilterGame);
+$("#source-filter").change(searchAndFilterNews);
 
-// Load games
-$(document).ready(fetchGames);
+$(document).ready(() => fetchNews());
